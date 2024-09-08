@@ -495,7 +495,7 @@ class BaseTuner(nn.Module, ABC):
 
         # Handle X-LoRA case.
         if not is_target_modules_in_base_model and hasattr(peft_config, "target_modules"):
-            raise ValueError(
+            logger.warning(
                 f"Target modules {peft_config.target_modules} not found in the base model. "
                 f"Please check the target modules and try again."
             )

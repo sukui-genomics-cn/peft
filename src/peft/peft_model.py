@@ -136,8 +136,9 @@ class PeftModel(PushToHubMixin, torch.nn.Module):
     def __init__(
         self,
         model: PreTrainedModel,
-        peft_config: PeftConfig,
+        peft_config: Optional[PeftConfig] = None,
         adapter_name: str = "default",
+        base_model: Optional[BaseTuner] = None,
         autocast_adapter_dtype: bool = True,
     ) -> None:
         super().__init__()
@@ -148,14 +149,20 @@ class PeftModel(PushToHubMixin, torch.nn.Module):
         # forward.
         self.special_peft_forward_args = {"adapter_names"}
 
-        self._is_prompt_learning = peft_config.is_prompt_learning
-        if self._is_prompt_learning:
+        if peft_config is None:
+            self.base_model = None
+            self._peft_config = {}
+        elif peft_config.is_prompt_learning:
+            self._is_prompt_learning = peft_config.is_prompt_learning
             self._peft_config = {adapter_name: peft_config}
             self.base_model = model
             self.add_adapter(adapter_name, peft_config)
         else:
             self._peft_config = None
-            cls = PEFT_TYPE_TO_MODEL_MAPPING[peft_config.peft_type]
+            if base_model is not None:
+                cls = base_model
+            else:
+                cls = PEFT_TYPE_TO_MODEL_MAPPING[peft_config.peft_type]
             self.base_model = cls(model, {adapter_name: peft_config}, adapter_name)
             self.set_additional_trainable_modules(peft_config, adapter_name)
 
